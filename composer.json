@@ -1,0 +1,26 @@
+{
+    "name": "sako/passport",
+    "description": "Role and permission managament for Laravel",
+    "keywords": ["laravel", "role", "permission", "passport", "user role", "route permission"],
+    "homepage": "http://github.com/sakirsensoy/passport",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Şakir Şensoy",
+            "email": "sakirsensoy@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.4.0",
+        "laravel/framework": "4.2.*"
+    },
+    "autoload": {
+        "classmap": [
+            "src/migrations"
+        ],
+        "psr-0": {
+            "Sako\\Passport\\": "src/"
+        }
+    },
+    "minimum-stability": "stable"
+}
