@@ -6,7 +6,7 @@ Installation
 
 Install using composer:
 
-    composer require sako/passport
+    composer require sako/passport:1.0.*
 
 Add the service provider in `app/config/app.php`:
 
