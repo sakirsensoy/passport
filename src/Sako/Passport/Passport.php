@@ -184,11 +184,10 @@ class Passport {
         ->join($this->roleTable, "{$this->userRoleTable}.passport_role_id", '=', "{$this->roleTable}.id")
         ->where("{$this->userRoleTable}.user_id", $userId)
         ->select(
-            "{$this->userRoleTable}.id",
-            "{$this->userRoleTable}.passport_role_id as role_id",
-            "{$this->roleTable}.title as role_title",
-            "{$this->userRoleTable}.created_at",
-            "{$this->userRoleTable}.updated_at"
+            "{$this->roleTable}.id",
+            "{$this->roleTable}.title",
+            "{$this->roleTable}.created_at",
+            "{$this->roleTable}.updated_at"
         )
         ->first();
     }
