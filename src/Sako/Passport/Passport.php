@@ -185,7 +185,6 @@ class Passport {
         ->where("{$this->userRoleTable}.user_id", $userId)
         ->select(
             "{$this->userRoleTable}.id",
-            "{$this->userRoleTable}.user_id",
             "{$this->userRoleTable}.passport_role_id as role_id",
             "{$this->roleTable}.title as role_title",
             "{$this->userRoleTable}.created_at",
