@@ -75,7 +75,7 @@ class Passport {
             $rolePermissions = [];
             array_walk($permissions, function($permission) use (&$rolePermissions, $rolePermissionIds, $allPermission)
             {
-                $rolePermission = [
+                $rolePermission = (object)[
                     'id'       => $permission->id,
                     'code'     => $permission->code,
                     'selected' => array_search($permission->id, $rolePermissionIds) !== false
