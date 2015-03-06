@@ -106,18 +106,21 @@ class Passport {
      */
     public function createRole($data)
     {
-        $title       = $data['title'];
-        $permissions = json_encode($data['permissions']);
-        $createdAt   = date('Y-m-d H:i:s');
-        $updatedAt   = $createdAt;
+        $timestamp = date('Y-m-d H:i:s');
+
+        $insertedData = [
+            'created_at' => $timestamp,
+            'updated_at' => $timestamp
+        ];
+
+        if (isset($data['permissions']))
+            $insertedData['permissions'] = json_encode($data['permissions']);
+
+        if (isset($data['title']))
+            $insertedData['title'] = $data['title'];
 
         return DB::table($this->roleTable)
-        ->insert([
-            'title'       => $title,
-            'permissions' => $permissions,
-            'created_at'  => $createdAt,
-            'updated_at'  => $updatedAt
-        ]);
+        ->insert($insertedData);
     }
 
     /**
@@ -129,17 +132,21 @@ class Passport {
      */
     public function updateRole($roleId, $data)
     {
-        $title       = $data['title'];
-        $permissions = json_encode($data['permissions']);
-        $updatedAt   = date('Y-m-d H:i:s');
+        $timestamp = date('Y-m-d H:i:s');
+
+        $updatedData = [
+            'updated_at' => $timestamp
+        ];
+
+        if (isset($data['permissions']))
+            $updatedData['permissions'] = json_encode($data['permissions']);
+
+        if (isset($data['title']))
+            $updatedData['title'] = $data['title'];
 
         $update = DB::table($this->roleTable)
         ->where('id', $roleId)
-        ->update([
-            'title'       => $title,
-            'permissions' => $permissions,
-            'updated_at'  => $updatedAt
-        ]);
+        ->update($updatedData);
 
         return $update > 0;
     }
