@@ -1,6 +1,6 @@
 <?php namespace Sako\Passport\Traits;
 
-use Sako\Passport\Passport;
+use Passport;
 
 trait PassportModelTrait {
 
