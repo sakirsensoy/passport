@@ -33,10 +33,19 @@ Route::filter('passport', function ()
         }
         else
         {
-            return Redirect::route(Config::get('passport::unauthorized_page'))
-            ->with('passport_intended_url',    Route::current()->uri())
-            ->with('passport_user_id',         $userId)
-            ->with('passport_permission_code', $permissionCode);
+            if (Auth::guest())
+            {
+                return Redirect::route(Config::get('passport::login_page'))
+                ->with('url.intended',             Route::current()->uri())
+                ->with('passport.permission_code', $permissionCode);
+            }
+            else
+            {
+                return Redirect::route(Config::get('passport::unauthorized_page'))
+                ->with('url.intended',             Route::current()->uri())
+                ->with('passport.user_id',         $userId)
+                ->with('passport.permission_code', $permissionCode);
+            }
         }
     }
 });
