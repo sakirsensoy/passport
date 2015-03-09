@@ -57,9 +57,29 @@ class PermissionGeneratorCommand extends Command {
         $routeAliases = [];
         foreach ($routes as $route)
         {
-            $routeName = $route->getName();
+            // Route info
+            $routeName          = $route->getName();
+            $routeAction        = $route->getAction();
+            $routeBeforeFilters = isset($routeAction['before']) ? $routeAction['before'] : null;
 
-            if ($routeName)
+            // Passport filter exists
+            $passportFilterExists = function() use ($routeBeforeFilters)
+            {
+                if ($routeBeforeFilters)
+                {
+                    if (! is_array($routeBeforeFilters))
+                    {
+                        $routeBeforeFilters = explode('|', $routeBeforeFilters);
+                    }
+
+                    return array_search('passport', $routeBeforeFilters) !== false;
+                }
+
+                return false;
+            };
+
+            // Add route to collections
+            if ($routeName && $passportFilterExists())
             {
                 array_push($routeAliases, $routeName);
             }
