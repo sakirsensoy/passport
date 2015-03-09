@@ -87,7 +87,7 @@ class Passport {
                 }
                 else
                 {
-                    if ( $rolePermission['selected'] ) array_push($rolePermissions, $rolePermission);
+                    if ( $rolePermission->selected ) array_push($rolePermissions, $rolePermission);
                 }
             });
 
