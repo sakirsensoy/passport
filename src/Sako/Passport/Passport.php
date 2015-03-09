@@ -245,7 +245,7 @@ class Passport {
         if ($userRole)
         {
             // get role
-            $role = $this->getRole($userRole->role_id, false);
+            $role = $this->getRole($userRole->id, false);
 
             // permissions
             $permissions = $role->permissions;
@@ -253,7 +253,7 @@ class Passport {
             // seacrh code in permissions
             foreach ($permissions as $permission)
             {
-                if ($permission['code'] === $permissionCode)
+                if ($permission->code === $permissionCode)
                 {
                     return true;
                 }
