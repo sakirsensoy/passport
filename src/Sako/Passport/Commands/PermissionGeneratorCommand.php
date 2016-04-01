@@ -1,4 +1,6 @@
-<?php namespace Sako\Passport\Commands;
+<?php
+
+namespace Sako\Passport\Commands;
 
 use Passport;
 

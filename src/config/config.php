@@ -2,12 +2,21 @@
 
 return [
 
-    // Login page route name
-    'login_page' => 'login',
+    /* User Model which will be used for relation in UserRole */
+    'user_model' => App\User::class,
 
-    // Unauthorized page route name
-    'unauthorized_page' => 'unauthorized',
+    /* list of package messages */
+    'messages' => [
+        'insufficient_permission' => 'Insufficient permission.',
+    ],
 
-    // Ajax unauthorized message
-    'unauthorized_message' => 'User not authorized.',
+    /* Route alias descriptions */
+    'aliases' => [
+    /*
+        // example route alias: 'admin.create'
+        'admin' => [
+            'create' => 'Create New Admin'
+        ]
+    */
+    ]
 ];
