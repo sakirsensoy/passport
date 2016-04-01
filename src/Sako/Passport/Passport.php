@@ -280,5 +280,7 @@ class Passport {
                 'alias' => $alias
             ]);
         }
+
+        return [$insertedPermissions->count(), $deletedPermissions->count()];
     }
 }
