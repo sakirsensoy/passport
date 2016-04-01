@@ -5,8 +5,14 @@ Installation
 ------------
 
 Install using composer:
-
-    composer require sako/passport:2.0.*
+    
+Laravel 4:
+    
+    composer require sako/passport:1.*
+    
+Laravel 5:
+    
+    composer require sako/passport:2.*
 
 Add the service provider in `app/config/app.php`:
 
