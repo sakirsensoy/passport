@@ -1,12 +1,12 @@
 # passport
-Role and permission managament for Laravel
+Role and permission managament for Laravel 5
 
 Installation
 ------------
 
 Install using composer:
 
-    composer require sako/passport:1.0.*
+    composer require sako/passport:2.0.*
 
 Add the service provider in `app/config/app.php`:
 
