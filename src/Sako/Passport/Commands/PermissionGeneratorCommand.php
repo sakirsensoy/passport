@@ -1,4 +1,6 @@
-<?php namespace Sako\Passport\Commands;
+<?php
+
+namespace Sako\Passport\Commands;
 
 use Passport;
 
@@ -31,7 +33,9 @@ class PermissionGeneratorCommand extends Command {
     {
         if ($this->input->getOption('force') || $this->confirm("Do you want to permissions update? [yes|no]"))
         {
-            Passport::generatePermissionsCommand();
+            list($inserted, $deleted) = Passport::generatePermissionsCommand();
+            $this->info('New aliases: ' . $inserted);
+            $this->info('Deleted aliases: ' . $deleted);
             $this->info('Permissions update completed.');
         }
     }

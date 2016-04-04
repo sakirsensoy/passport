@@ -1,4 +1,6 @@
-<?php namespace Sako\Passport\Facades;
+<?php
+
+namespace Sako\Passport\Facades;
 
 use Illuminate\Support\Facades\Facade;
 

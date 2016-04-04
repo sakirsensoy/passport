@@ -1,6 +1,16 @@
-<?php namespace Sako\Passport;
+<?php
 
-use Config, DB, Route;
+namespace Sako\Passport;
+
+use Route;
+
+use Sako\Passport\Models\Role;
+use Sako\Passport\Models\UserRole;
+use Sako\Passport\Models\Permission;
+
+use Sako\Passport\Exceptions\RoleNotFound;
+use Sako\Passport\Exceptions\PermissionNotFound;
+use Sako\Passport\Exceptions\DataMismatch;
 
 class Passport {
 
@@ -12,29 +22,40 @@ class Passport {
     protected $permissionTable = 'passport_permissions';
 
     /**
-     * Role table name
-     *
-     * @var string
-     */
-    protected $roleTable = 'passport_roles';
-
-    /**
-     * User role table name
-     *
-     * @var string
-     */
-    protected $userRoleTable = 'passport_user_roles';
-
-    /**
      * List all permissions
      *
      * @return array
      */
     public function getPermissions()
     {
-        return DB::table($this->permissionTable)
-        ->orderBy('code', 'ASC')
-        ->get();
+        return Permission::orderBy('alias', 'ASC')->get();
+    }
+
+    public function getPermission($permissionId)
+    {
+        $permission = Permission::find($permissionId);
+
+        if (! $permission) {
+            throw new PermissionNotFound(sprintf('PermissionId not found: %d', $permissionId), 404);
+        }
+
+        return $permission;
+    }
+
+    public function getPermissionByAlias($alias)
+    {
+        return Permission::where('alias', $alias)->first();
+    }
+
+    public function updatePermission($alias, $description)
+    {
+        $permission = $this->getPermission($alias);
+
+        $permission->description = $description;
+
+        $permission->save();
+
+        return $permission;
     }
 
     /**
@@ -44,55 +65,25 @@ class Passport {
      */
     public function getRoles()
     {
-        return DB::table($this->roleTable)
-        ->orderBy('title', 'ASC')
-        ->get();
+        return Role::orderBy('title', 'ASC')->get();
     }
 
     /**
      * Get role
      *
      * @param  integer $roleId
-     * @param  boolean $allPermission
      * @return object|null
      */
-    public function getRole($roleId, $allPermission = false)
+    public function getRole($roleId)
     {
         // all permissions
-        $permissions = $this->getPermissions();
+        $allPermissions = $this->getPermissions();
 
         // role
-        $role = DB::table($this->roleTable)
-        ->where('id', $roleId)
-        ->first();
+        $role = Role::find($roleId);
 
-        if ($role)
-        {
-            // role permissions
-            $rolePermissionIds = json_decode($role->permissions);
-
-            // design role permissions
-            $rolePermissions = [];
-            array_walk($permissions, function($permission) use (&$rolePermissions, $rolePermissionIds, $allPermission)
-            {
-                $rolePermission = (object)[
-                    'id'       => $permission->id,
-                    'code'     => $permission->code,
-                    'selected' => array_search($permission->id, $rolePermissionIds) !== false
-                ];
-
-                if ($allPermission)
-                {
-                    array_push($rolePermissions, $rolePermission);
-                }
-                else
-                {
-                    if ( $rolePermission->selected ) array_push($rolePermissions, $rolePermission);
-                }
-            });
-
-            // set role permissions value
-            $role->permissions = $rolePermissions;
+        if (! $role) {
+            throw new RoleNotFound(sprintf('RoleId not found: %d', $roleId), 404);
         }
 
         return $role;
@@ -106,21 +97,25 @@ class Passport {
      */
     public function createRole($data)
     {
-        $timestamp = date('Y-m-d H:i:s');
+        if (! array_get($data, 'title')) {
+            throw new DataMismatch('Title is missing', 400);
+        }
 
-        $insertedData = [
-            'created_at' => $timestamp,
-            'updated_at' => $timestamp
-        ];
+        if (! array_get($data, 'permissions') || ! is_array($data['permissions'])) {
+            throw new DataMismatch('permissions should be an array', 400);
+        }
 
-        if (isset($data['permissions']))
-            $insertedData['permissions'] = json_encode($data['permissions']);
+        // remove inexist permission ids from list
+        $permissions = Permission::whereIn('id', $data['permissions'])->lists('id');
 
-        if (isset($data['title']))
-            $insertedData['title'] = $data['title'];
+        $role = new Role([
+            'title'       => $data['title'],
+            'permissions' => $permissions
+        ]);
 
-        return DB::table($this->roleTable)
-        ->insert($insertedData);
+        $role->save();
+
+        return $role;
     }
 
     /**
@@ -132,23 +127,23 @@ class Passport {
      */
     public function updateRole($roleId, $data)
     {
-        $timestamp = date('Y-m-d H:i:s');
+        if (! array_get($data, 'title')) {
+            throw new DataMismatch('title is missing', 400);
+        }
 
-        $updatedData = [
-            'updated_at' => $timestamp
-        ];
+        if (! array_get($data, 'permissions') || ! is_array($data['permissions'])) {
+            throw new DataMismatch('permissions should be an array', 400);
+        }
 
-        if (isset($data['permissions']))
-            $updatedData['permissions'] = json_encode($data['permissions']);
+        $role = $this->getRole($roleId);
 
-        if (isset($data['title']))
-            $updatedData['title'] = $data['title'];
+        $permissions = Permission::whereIn('id', $data['permissions'])->lists('id');
 
-        $update = DB::table($this->roleTable)
-        ->where('id', $roleId)
-        ->update($updatedData);
+        $role->title       = $data['title'];
+        $role->permissions = $permissions;
+        $role->save();
 
-        return $update > 0;
+        return $role;
     }
 
     /**
@@ -159,17 +154,11 @@ class Passport {
      */
     public function deleteRole($roleId)
     {
-        // delete role
-        $deleteRole = DB::table($this->roleTable)
-        ->where('id', $roleId)
-        ->delete();
+        $role = $this->getRole($roleId);
+        $role->userRoles()->delete();
+        $role->delete();
 
-        // delete user role
-        $deleteUserRole = DB::table($this->userRoleTable)
-        ->where('passport_role_id', $roleId)
-        ->delete();
-
-        return $deleteRole > 0;
+        return true;
     }
 
     /**
@@ -178,86 +167,68 @@ class Passport {
      * @param  integer $userId
      * @return object|null
      */
-    public function getUserRole($userId)
+    public function getRoleForUser($userId)
     {
-        return DB::table($this->userRoleTable)
-        ->join($this->roleTable, "{$this->userRoleTable}.passport_role_id", '=', "{$this->roleTable}.id")
-        ->where("{$this->userRoleTable}.user_id", $userId)
-        ->select(
-            "{$this->roleTable}.id",
-            "{$this->roleTable}.title",
-            "{$this->roleTable}.created_at",
-            "{$this->roleTable}.updated_at"
-        )
-        ->first();
+        $role = Role::with(['userRoles' => function($query) use ($userId) {
+            $query->where('user_id', $userId);
+        }])->first();
+
+        return $role;
     }
 
     /**
-     * Update user role
+     * Update or Create user role
      *
      * @param  integer $userId
      * @param  integer $roleId
      * @return boolean
      */
-    public function updateUserRole($userId, $roleId)
+    public function setUserRole($userId, $roleId)
     {
-        $timestamp = date('Y-m-d H:i:s');
+        $userRole = UserRole::where('user_id', $userId)->first();
 
-        $userRole = DB::table($this->userRoleTable)
-        ->where('user_id', $userId)
-        ->get();
+        $role = $this->getRole($roleId);
 
-        if (count($userRole) > 0)
-        {
-            $updateUserRole = DB::table($this->userRoleTable)
-            ->where('user_id', $userId)
-            ->update([
-                'passport_role_id' => $roleId,
-                'updated_at'       => $timestamp
-            ]);
-
-            return $updateUserRole > 0;
-        }
-        else
-        {
-            return DB::table($this->userRoleTable)
-            ->insert([
+        if ($userRole) {
+            $userRole->passport_role_id = $role->id;
+            $userRole->save();
+        } else {
+            $userRole = new UserRole([
                 'user_id'          => $userId,
-                'passport_role_id' => $roleId,
-                'created_at'       => $timestamp,
-                'updated_at'       => $timestamp
+                'passport_role_id' => $role->id
             ]);
+            $userRole->save();
         }
+
+        return $userRole->user;
+    }
+
+    public function unsetUserRole($userId)
+    {
+        $userRole = UserRole::where('user_id', $userId)->first();
+
+        if ($userRole) {
+            $userRole->delete();
+            return true;
+        }
+
+        return false;
     }
 
     /**
      * Check user permission
      *
      * @param  integer $userId
-     * @param  string  $permissionCode
+     * @param  string  $alias
      * @return boolean
      */
-    public function checkUserPermission($userId, $permissionCode)
+    public function hasPermission($userId, $alias)
     {
-        // user role
-        $userRole = $this->getUserRole($userId);
+        $role       = $this->getRoleForUser($userId);
+        $permission = $this->getPermissionByAlias($alias);
 
-        if ($userRole)
-        {
-            // get role
-            $role = $this->getRole($userRole->id, false);
-
-            // permissions
-            $permissions = $role->permissions;
-
-            // seacrh code in permissions
-            foreach ($permissions as $permission)
-            {
-                if ($permission->code === $permissionCode)
-                {
-                    return true;
-                }
-            }
+        if ($role && $permission && in_array($permission->id, $role->permissions)) {
+            return true;
         }
 
         return false;
@@ -274,66 +245,42 @@ class Passport {
         $routes = Route::getRoutes();
 
         // Get route aliases
-        $routeAliases = [];
-        foreach ($routes as $route)
-        {
+        $routeAliases = collect();
+
+        foreach ($routes as $route) {
             // Route info
-            $routeName          = $route->getName();
-            $routeAction        = $route->getAction();
-            $routeBeforeFilters = isset($routeAction['before']) ? $routeAction['before'] : null;
+            $routeName        = $route->getName();
+            $routeAction      = $route->getAction();
+            $routeMiddlewares = array_get($routeAction, 'middleware', []);
 
-            // Passport filter exists
-            $passportFilterExists = function() use ($routeBeforeFilters)
-            {
-                if ($routeBeforeFilters)
-                {
-                    if (! is_array($routeBeforeFilters))
-                    {
-                        $routeBeforeFilters = explode('|', $routeBeforeFilters);
-                    }
-
-                    return array_search('passport', $routeBeforeFilters) !== false;
-                }
-
-                return false;
-            };
-
-            // Add route to collections
-            if ($routeName && $passportFilterExists())
-            {
-                array_push($routeAliases, $routeName);
+            // Add route to collections if passport filter exists in middleware
+            if ($routeName && in_array('passport', $routeMiddlewares)) {
+                $routeAliases->push($routeName);
             }
         }
 
         // Sort route aliases
-        sort($routeAliases, SORT_NATURAL | SORT_FLAG_CASE);
+        $routeAliases = $routeAliases->sortBy('alias');
 
         // Get permissions
-        $permissions = DB::table($this->permissionTable)->lists('code', 'id');
+        $permissions = $this->getPermissions()->lists('alias');
 
         // Permissions difference
-        $deletedPermissions  = array_diff($permissions, $routeAliases);
-        $insertedPermissions = array_diff($routeAliases, $permissions);
+        $insertedPermissions = $routeAliases->diff($permissions);
+        $deletedPermissions  = $permissions->diff($routeAliases);
 
         // Delete unnecessary permissions
-        if (count($deletedPermissions) > 0)
-        {
-            foreach ($deletedPermissions as $code)
-            {
-                DB::table($this->permissionTable)
-                ->where('code', $code)
-                ->delete();
-            }
+        foreach ($deletedPermissions as $alias) {
+            Permission::where('alias', $alias)->delete();
         }
 
         // Insert new permissions
-        if (count($insertedPermissions) > 0)
-        {
-            DB::table($this->permissionTable)
-            ->insert(array_map(function($code)
-            {
-                return ['code' => $code];
-            }, $insertedPermissions));
+        foreach ($insertedPermissions as $alias) {
+            Permission::create([
+                'alias' => $alias
+            ]);
         }
+
+        return [$insertedPermissions->count(), $deletedPermissions->count()];
     }
 }
