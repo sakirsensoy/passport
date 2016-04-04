@@ -4,6 +4,7 @@ namespace Sako\Passport;
 
 use Illuminate\Support\ServiceProvider;
 use Sako\Passport\Commands\PermissionGeneratorCommand;
+use Sako\Passport\Commands\PermissionListCommand;
 
 class PassportServiceProvider extends ServiceProvider {
 
@@ -72,7 +73,13 @@ class PassportServiceProvider extends ServiceProvider {
             return new PermissionGeneratorCommand;
         });
 
+        $this->app['passport::commands.list_permissions'] = $this->app->share(function($app)
+        {
+            return new PermissionListCommand;
+        });
+
         $this->commands('passport::commands.permission_generator');
+        $this->commands('passport::commands.list_permissions');
     }
 
     /**
